@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:widget="http://www.netvibes.com/ns/"
+>
+  <head>
+    <!-- Application Metas -->
+    <title>Title of the App</title>
+    <meta name="author" content="John Doe" />
+    <meta name="description" content="A descriptive description" />
+
+    <!-- Application Standalone emulation files -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="//uwa.netvibes.com/lib/c/UWA/assets/css/standalone.css"
+    />
+    <script
+      type="text/javascript"
+      src="//uwa.netvibes.com/lib/c/UWA/js/UWA_Standalone_Alone.js"
+    ></script>
+
+    <!-- Application JavaScript Source -->
+    <script type="text/javascript">
+      define("MyProject/Model/Doc", [
+        "UWA/Class/Model",
+        "UWA/Class/Debug",
+        "UWA/String",
+      ], function (Model, Debug, UWAString) {
+        "use strict";
+        var doc = new UWA.Class.Model({
+          id: 1,
+          title: "The Big Nowhere",
+          author: "James Ellroy",
+          publisher: "Rivages Noir",
+        });
+
+        return doc;
+      });
+
+      define("MyProject/View/DocumentRow", [
+        "UWA/Class/View",
+        "UWA/Class/Debug",
+        "UWA/String",
+      ], function (View, Debug, UWAString) {
+        "use strict";
+
+        console.log("inside view doc");
+        var DocumentRow = UWA.Class.View.extend(UWA.Class.Debug, {
+          tagName: "li",
+          
+          className: "document-row",
+
+          domEvents: {
+            "click .icon": "open",
+            "click button.edit": "openEditDialog",
+            "click button.delete": "delete",
+          },
+
+          setup: function () {
+            console.log("inside setup");
+            // this.collection.fetch(); // onComplete() --> posts --> render()
+            this.listenTo(this.model, "onChange", this.render);
+            this.log("initialized!");
+          },
+
+          render: function () {
+            console.log("rendering");
+            // Here typically we should render a compiled template...
+            // Also note that there is no need to re-bind DOM events
+            // thanks to event delegation handled by the 'container'
+            // of the View !
+
+            // new UWA Datagrid(  columns, data:this.collection.)
+            this.container.setContent([
+              {
+                tag: "span",
+                class: "icon",
+                text: "hello",
+              },
+              {
+                tag: "span",
+                class: "title",
+                text: this.model.get("title"),
+              },
+              {
+                tag: "button",
+                text:"Button1",
+                class: "edit",
+              },
+              {
+                tag: "button",
+                text:"Button2",
+                class: "delete",
+              },
+            ]);
+            console.log(this);
+            return this;
+            
+          },
+
+          open: function (domClickEvent) {
+            this.dispatchEvent("onOpen", [this.model]);
+            // this event can be caught by the parent view to display
+            // the doc abstract in an overlay panel for example.
+          },
+
+          openEditDialog: function (domClickEvent) {
+            this.dispatchEvent("onOpenEditDialog", [this.model]);
+            this.model.set("title","new title")
+            // this event can be caught by the parent view to display
+            // the doc editor in an overlay panel for example.
+          },
+
+
+
+          delete: function (domClickEvent) {
+            
+            console.log("inside delete func");
+            var that = this;
+            that.disable(); // to disable user's interaction with the
+            // doc being removed.
+            // Now let's destroy the model in the backend server :
+            // if deletion in the backend succeeds, this view is destroyed
+            // otherwise we warn our parent view that deletion failed and
+            // enable this view.
+            // console.log("delete" + that.model.destroy);
+            this.destroy()
+            // that.model.destroy(
+            //   {
+            //     onComplete: function(){
+  
+
+            //       that.destroy.bind(that)(),
+            //       console.log("oncomplete" + that.model.destroy);
+            //     },
+            //     onFailure: function (model, response, options) {
+            //       var msg = UWA.String.format(
+            //         "Oops! Failed to delete doc {0} because {1}.",
+            //         that.model.get("title"),
+            //         response
+            //       );
+            //       that.dispatchEvent("onError", [msg]);
+            //       that.enable();
+            //     },
+            //   },
+            //   {
+            //     // wait: true,
+            //   }
+            // );
+          },
+
+          disable: function (timeOut) {
+            return this;
+          },
+
+          enable: function () {
+            return this;
+          },
+
+          // We override this destroy method to ...
+          destroy: function () {
+            // 1) stop listening to our observed model, this is very important
+            // so that our view can be effectively removed by the GC (otherwise
+            // it is held by the model, as a registered observer).
+            this.stopListening();
+            this.model = null;
+
+            // 2) Eventually call this._parent() so that our container element
+            // is destroyed and removed from the DOM.
+            this._parent();
+          },
+        });
+
+        UWA.Event.onDomReady(function () {
+          console.log("inside onDomReady");
+          require(["MyProject/Model/Doc", "MyProject/View/DocumentRow"], function (doc, docRow1) {
+            
+            docRow1 = new DocumentRow({
+              //collection: posts,
+              model:doc,
+              id: "document-row-" + doc.id,
+            });
+
+            docRow1.addEvent("onOpen", function (doc) {
+              alert(
+                UWA.String.format(
+                  "This is the abstract for document {0}",
+                  doc.get("title")
+                )
+              );
+            });
+
+            docRow1.addEvent("onOpenEditDialog", function (doc) {
+              alert(
+                UWA.String.format(
+                  "This is the editor for document {0}",
+                  doc.get("title")
+                )
+              );
+            });
+
+            docRow1.render().inject(document.getElementById("docs"));
+          });
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <ul id="docs"></ul>
+    <!-- <p>Loading...</p> -->
+  </body>
+</html>
