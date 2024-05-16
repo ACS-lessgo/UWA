@@ -4,6 +4,7 @@
 
 ```bash
 sudo pacman -S bspwm sxhkd polybar picom dmenu dunst nitrogen alacritty thunar
+sudo pacman -S bspwm sxhkd polybar picom dmenu dunst nitrogen alacritty thunar brave lxappearance rofi networkmanager alsa-utils xorg-xrandr feh
 
 
 # Set up directories
